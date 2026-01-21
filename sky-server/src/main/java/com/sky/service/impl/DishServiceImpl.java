@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,8 @@ public class DishServiceImpl implements DishService {
     public DishFlavorMapper dishFlavorMapper;
     @Autowired
     public SetmealDishMapper setmealDishMapper;
+    @Autowired
+    public CategoryMapper categoryMapper;
     @Override
     @Transactional
     public void save(DishDTO dishDTO) {
@@ -82,5 +85,59 @@ public class DishServiceImpl implements DishService {
         dishMapper.deleteByIds(idArray);
         dishFlavorMapper.deleteByDishIds(idArray);
     }
+
+    @Override
+    public DishVO getById(Long id) {
+        // 查询菜品基本信息
+        Dish dish = dishMapper.selectById(id);
+
+        // 查询菜品口味信息
+        List<DishFlavor> flavors = dishFlavorMapper.getByDishId(id);
+
+        // 查询分类名称
+        Category category = categoryMapper.selectById(dish.getCategoryId());
+
+        // 构建返回对象
+        DishVO dishVO = DishVO.builder()
+                .id(dish.getId())
+                .name(dish.getName())
+                .categoryId(dish.getCategoryId())
+                .price(dish.getPrice())
+                .image(dish.getImage())
+                .description(dish.getDescription())
+                .status(dish.getStatus())
+                .updateTime(dish.getUpdateTime())
+                .categoryName(category != null ? category.getName() : "")
+                .flavors(flavors)
+                .build();
+
+        return dishVO;
+    }
+
+    @Override
+    @Transactional
+    public void update(DishDTO dishDTO) {
+        // 更新菜品基本信息
+        Dish dish = new Dish();
+        BeanUtils.copyProperties(dishDTO, dish);
+        dishMapper.update(dish);
+
+        // 删除原有口味信息
+        dishFlavorMapper.deleteByDishIds(Arrays.asList(dish.getId()));
+
+        // 插入新的口味信息
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        if (!CollectionUtils.isEmpty(flavors)) {
+            flavors.forEach(dishFlavor -> dishFlavor.setDishId(dish.getId()));
+            dishFlavorMapper.insertBatch(flavors);
+        }
+    }
+
+    @Override
+    public List<Dish> selectByCategoryId(Long categoryId) {
+        List<Dish> dish = dishMapper.selectByCategoryId(categoryId);
+        return dish;
+    }
+
 }
 

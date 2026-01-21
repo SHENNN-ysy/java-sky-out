@@ -5,7 +5,7 @@
     <select id="list" resultType="com.sky.vo.DishVO">
         select Dish.*, Category.name  from  Dish left join Category on Dish.category_id = Category.id
         <where>
-            <if test="name != null and name != ''">Dish.name = #{name},</if>
+            <if test="name != null and name != ''">and Dish.name like concat('%',#{name},'%')</if>
             <if test="status != null">and Dish.status = #{status}</if>
             <if test="categoryId != null">and category_id = #{categoryId}</if>
         </where>
@@ -20,4 +20,22 @@
             #{id}
         </foreach>
     </delete>
+    <update id="update" parameterType="com.sky.entity.Dish">
+        update dish
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="image != null">image = #{image},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+        </set>
+        where id = #{id}
+    </update>
+    <select id="selectByCategoryId" resultType="com.sky.entity.Dish">
+        select * from Dish where category_id = #{categoryId}
+    </select>
+
 </mapper>

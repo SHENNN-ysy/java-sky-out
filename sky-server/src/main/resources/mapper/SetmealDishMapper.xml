@@ -8,4 +8,10 @@
             #{dishId}
         </foreach>
     </select>
+    <insert id="insertBatch" parameterType="com.sky.entity.SetmealDish">
+        insert into setmeal_dish (setmeal_id, dish_id, name, price, copies) values
+        <foreach item="setmealDish" collection="list" separator=",">
+            (#{setmealDish.setmealId}, #{setmealDish.dishId}, #{setmealDish.name}, #{setmealDish.price}, #{setmealDish.copies})
+        </foreach>
+    </insert>
 </mapper>

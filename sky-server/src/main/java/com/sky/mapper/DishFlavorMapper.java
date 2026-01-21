@@ -16,4 +16,6 @@ public interface DishFlavorMapper {
     void deleteByDishId(Long id);
 
     void deleteByDishIds(List<Long> idArray);
+
+    List<DishFlavor> getByDishId(Long id);
 }

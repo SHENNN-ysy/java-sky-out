@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sky.mapper.DishMapper">
+    <select id="list" resultType="com.sky.vo.DishVO">
+        select Dish.*, Category.name  from  Dish left join Category on Dish.category_id = Category.id
+        <where>
+            <if test="name != null and name != ''">Dish.name = #{name},</if>
+            <if test="status != null">and Dish.status = #{status}</if>
+            <if test="categoryId != null">and category_id = #{categoryId}</if>
+        </where>
+    </select>
+    <select id="selectById" resultType="com.sky.entity.Dish">
+        select * from Dish where id = #{id}
+    </select>
+
+    <delete id="deleteByIds">
+        delete from Dish where id in
+        <foreach item="id" collection="list" separator="," open="(" close=")" index="">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

@@ -37,5 +37,4 @@ public interface SetmealMapper {
     @AutoFill(value = OperationType.UPDATE)
     void update(Setmeal setmeal);
 
-    void updateSetmealStatus(Long id, Integer status);
 }

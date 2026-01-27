@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.sky.mapper.DishMapper">
     <select id="list" resultType="com.sky.vo.DishVO">
-        select Dish.*, Category.name  from  Dish left join Category on Dish.category_id = Category.id
+        select Dish.*, Category.name as categoryName from  Dish left join Category on Dish.category_id = Category.id
         <where>
             <if test="name != null and name != ''">and Dish.name like concat('%',#{name},'%')</if>
             <if test="status != null">and Dish.status = #{status}</if>

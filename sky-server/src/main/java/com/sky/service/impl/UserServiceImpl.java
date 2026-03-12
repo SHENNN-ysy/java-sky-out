@@ -30,17 +30,17 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
     @Override
     public User wxlogin(UserLoginDTO userLoginDTO){
-        // TODO: 调用微信接口服务，获取openid
+        //  调用微信接口服务，获取openid
         String openid = getOpenId(userLoginDTO.getCode());
-        // TODO: 判断openid是否存在，不存在则报错
+        //  判断openid是否存在，不存在则报错
         if (openid == null){
             throw  new LoginFailedException(MessageConstant.LOGIN_FAILED);
         }
 
-        // TODO: openid存在，判断是否为新用户
+        //  openid存在，判断是否为新用户
 
         User user = userMapper.getByOpenid(openid);
-        // TODO: 新用户，自动完成注册
+        //  新用户，自动完成注册
         if (user == null){
             user = User.builder()
                     .openid(openid)
@@ -48,7 +48,7 @@ public class UserServiceImpl implements UserService {
                     .build();
             userMapper.save(user);
         }
-        // TODO: 返回用户信息
+        //  返回用户信息
         return user;
     }
     private  String getOpenId(String code){

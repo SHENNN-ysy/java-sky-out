@@ -22,6 +22,6 @@ public class ShopController {
     public Result getStatus(){
         Integer status=(Integer) redisTemplate.opsForValue().get("SHOP_STATUS");
         log.info("查询店铺营业状态:{}",status==1?"营业中":"打烊中");
-        return Result.success();
+        return Result.success(status);
     }
 }

@@ -17,7 +17,7 @@ public class OrderTask {
     /**
      * 每分钟执行一次，处理超时未支付的订单
      */
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0/5 * * * ?")
     public void processTimeoutOrderTask() {
         log.info("定时任务：处理超时未支付的订单，时间：{}", LocalDateTime.now());
         orderService.processTimeoutOrders();

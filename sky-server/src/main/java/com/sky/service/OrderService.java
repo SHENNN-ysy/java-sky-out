@@ -19,4 +19,15 @@ public interface OrderService {
      * @param outTradeNo
      */
     void paySuccess(String outTradeNo);
+    /**
+     * 处理超时未支付的订单
+     */
+    void processTimeoutOrders();
+
+    /**
+     * 处理派送中的订单，设置为已完成
+     */
+    void processDeliveryOrders();
+
+    void reminder(Long id);
 }

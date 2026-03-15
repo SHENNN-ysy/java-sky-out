@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
@@ -15,6 +16,8 @@ import com.sky.service.OrderService;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.websocket.WebSocketServer;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,10 +26,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional
+@Slf4j
 public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderMapper orderMapper;
@@ -40,6 +46,8 @@ public class OrderServiceImpl implements OrderService {
     private WeChatPayUtil weChatPayUtil;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private WebSocketServer webSocketServer;
     @Override
     public OrderSubmitVO submit(OrdersSubmitDTO ordersSubmitDTO) {
         //若地址为空，报异常
@@ -134,6 +142,83 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+        // 通过 WebSocket 向客户端推送订单状态
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", 1);
+        map.put("orderId", ordersDB.getId());
+        map.put("content", "订单号："+outTradeNo);
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
     }
 
+    /**
+     * 处理超时未支付的订单
+     */
+    public void processTimeoutOrders() {
+        // 查询 15 分钟前仍未支付的订单
+        LocalDateTime orderTime = LocalDateTime.now().minusMinutes(15);
+        List<Orders> ordersList = orderMapper.getByStatusAndOrderTimeLT(Orders.PENDING_PAYMENT, orderTime);
+
+        if (ordersList != null && ordersList.size() > 0) {
+            for (Orders orders : ordersList) {
+                log.info("发现超时订单，订单号：{},下单时间：{}", orders.getNumber(), orders.getOrderTime());
+
+                // 修改订单状态为已取消
+                Orders orderToUpdate = Orders.builder()
+                        .id(orders.getId())
+                        .status(Orders.CANCELLED)
+                        .cancelReason("订单超时未支付，系统自动取消")
+                        .cancelTime(LocalDateTime.now())
+                        .build();
+
+                orderMapper.update(orderToUpdate);
+            }
+            log.info("处理完成，共处理超时订单：{} 个", ordersList.size());
+        } else {
+            log.info("暂无超时未支付订单");
+        }
+    }
+
+    /**
+     * 处理派送中的订单，设置为已完成
+     */
+    public void processDeliveryOrders() {
+
+        // 查询所有派送中的订单
+        List<Orders> ordersList = orderMapper.getByStatus(Orders.DELIVERY_IN_PROGRESS);
+
+        if (ordersList != null && ordersList.size() > 0) {
+            for (Orders orders : ordersList) {
+                log.info("发现派送中订单，订单号：{}, 修改为已完成", orders.getNumber());
+
+                // 修改订单状态为已完成
+                Orders orderToUpdate = Orders.builder()
+                        .id(orders.getId())
+                        .status(Orders.COMPLETED)
+                        .deliveryTime(LocalDateTime.now())
+                        .build();
+
+                orderMapper.update(orderToUpdate);
+            }
+            log.info("处理完成，共处理派送中订单：{} 个", ordersList.size());
+        } else {
+            log.info("暂无派送中订单");
+        }
+    }
+
+    @Override
+    public void reminder(Long id) {
+        // 查询订单
+        Orders orders = orderMapper.getById(id);
+        //检验订单是否存在
+        if (orders == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        // 通过 WebSocket 向客户端推送订单状态
+        Map<String, Object> map = new HashMap<>();
+        map.put("type", 2);
+        map.put("orderId", id);
+        map.put("content", "用户催单,订单号："+orders.getNumber());
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
+    }
 }
